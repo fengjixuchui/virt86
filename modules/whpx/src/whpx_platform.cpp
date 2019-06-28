@@ -29,6 +29,8 @@ SOFTWARE.
 #include "whpx_dispatch.hpp"
 #include "whpx_defs.hpp"
 
+#include "virt86/util/host_info.hpp"
+
 namespace virt86::whpx {
 
 WhpxDispatch *WhpxPlatform::s_dispatch = new(std::nothrow) WhpxDispatch();
@@ -71,10 +73,16 @@ WhpxPlatform::WhpxPlatform() noexcept
     }
 
     const WhpxDefs::WHV_CAPABILITY_FEATURES features = cap.Features;
-    m_features.floatingPointExtensions = FloatingPointExtension::SSE2;
-    m_features.extendedControlRegisters = ExtendedControlRegister::XCR0 | ExtendedControlRegister::CR8 | ExtendedControlRegister::MXCSRMask;
+    m_features.floatingPointExtensions = HostInfo.floatingPointExtensions;
+    m_features.extendedControlRegisters = ExtendedControlRegister::CR8 | ExtendedControlRegister::MXCSRMask;
+    if (WHPX_MIN_VERSION(10_0_17763_0)) {
+        m_features.extendedControlRegisters |= ExtendedControlRegister::XCR0;
+    }
     m_features.maxProcessorsPerVM = 64; // TODO: check value
     m_features.maxProcessorsGlobal = 128; // TODO: check value
+    m_features.guestPhysicalAddress.maxBits = HostInfo.gpa.maxBits;
+    m_features.guestPhysicalAddress.maxAddress = HostInfo.gpa.maxAddress;
+    m_features.guestPhysicalAddress.mask = HostInfo.gpa.mask;
     m_features.unrestrictedGuest = true;
     m_features.extendedPageTables = true;
     m_features.largeMemoryAllocation = true;

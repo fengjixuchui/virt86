@@ -40,6 +40,7 @@ enum class MemoryMappingStatus {
     InvalidFlags,              // Invalid flags were provided
     InvalidRange,              // An invalid (non-mapped or non-matching) memory range was provided
     Failed,                    // Failed to map or unmap the memory region
+    OutOfBounds,               // Attempted to allocate GPA range beyond the host's limit
 };
 
 enum class DirtyPageTrackingStatus {

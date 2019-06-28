@@ -27,6 +27,8 @@ SOFTWARE.
 #include "kvm_vm.hpp"
 #include "kvm_helpers.hpp"
 
+#include "virt86/util/host_info.hpp"
+
 #include <fcntl.h>
 #include <linux/kvm.h>
 #include <sys/ioctl.h>
@@ -91,6 +93,10 @@ KvmPlatform::KvmPlatform() noexcept
     kvmCapResult = ioctl(m_fd, KVM_CHECK_EXTENSION, KVM_CAP_MAX_VCPUS);
     m_features.maxProcessorsGlobal = (kvmCapResult == 0) ? m_features.maxProcessorsPerVM : kvmCapResult;
 
+    m_features.guestPhysicalAddress.maxBits = HostInfo.gpa.maxBits;
+    m_features.guestPhysicalAddress.maxAddress = HostInfo.gpa.maxAddress;
+    m_features.guestPhysicalAddress.mask = HostInfo.gpa.mask;
+
     m_features.unrestrictedGuest = true;
     m_features.extendedPageTables = true;
     m_features.guestDebugging = ioctl(m_fd, KVM_CAP_DEBUGREGS) != 0 && ioctl(m_fd, KVM_CAP_SET_GUEST_DEBUG) != 0;
@@ -101,7 +107,7 @@ KvmPlatform::KvmPlatform() noexcept
     m_features.memoryAliasing = true;
     m_features.memoryUnmapping = false;
     m_features.partialMMIOInstructions = false;
-    m_features.floatingPointExtensions = FloatingPointExtension::SSE2;
+    m_features.floatingPointExtensions = HostInfo.floatingPointExtensions;
     m_features.extendedControlRegisters = ExtendedControlRegister::CR8 | ExtendedControlRegister::XCR0;
     m_features.extendedVMExits = ExtendedVMExit::Exception;
     m_features.exceptionExits = ExceptionCode::All;

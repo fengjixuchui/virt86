@@ -1,5 +1,5 @@
 /*
-Defines the Interrupt Descriptor Table data structure.
+Host information.
 -------------------------------------------------------------------------------
 MIT License
 
@@ -27,34 +27,33 @@ SOFTWARE.
 
 #include <cstdint>
 
+#include "virt86/platform/features.hpp"
+
 namespace virt86 {
 
-enum class IDTType : uint8_t {
-    Null00 = 0x0,
-    Task32 = 0x5,
-    Intr32 = 0xE,
-    Trap32 = 0xF,
+/**
+ * Information about the host environment.
+ */
+struct HostInfo {
+    /**
+     * Maximum extent of Guest Physical Addresses supported by the host.
+     */
+    struct GPA {
+        const uint8_t maxBits;
+        const uint64_t maxAddress;
+        const uint64_t mask;
+    
+        GPA() noexcept;
+    } gpa;
+
+    const FloatingPointExtension floatingPointExtensions;
+
+    HostInfo() noexcept;
 };
 
-struct IDTEntry {
-    union {
-        struct {
-            uint16_t offsetLow : 16;
-            uint16_t selector: 16;
-            uint8_t zero : 8;
-            uint8_t type : 4;
-            uint8_t storageSegment : 1;
-            uint8_t privilegeLevel : 2;
-            uint8_t present : 1;
-            uint16_t offsetHigh : 16;
-        } data;
-        uint64_t descriptor;
-    };
-
-    void Set(uint32_t offset, uint16_t selector, IDTType type, uint8_t attributes) noexcept;
-
-    uint32_t GetOffset() noexcept;
-    void SetOffset(uint32_t offset) noexcept;
-};
+/**
+ * Global instance of the host information structure.
+ */
+inline struct HostInfo HostInfo;
 
 }

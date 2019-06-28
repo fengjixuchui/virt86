@@ -23,9 +23,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+#include "kvm_helpers.hpp"
 #include "kvm_vp.hpp"
 #include "kvm_vm.hpp"
-#include "virt86/vp/regs.hpp"
 
 #include <linux/kvm.h>
 
@@ -38,7 +38,7 @@ void LoadSegment(RegValue& value, const struct kvm_segment *segment) noexcept {
     value.segment.attributes.type = segment->type;
     value.segment.attributes.present = segment->present;
     value.segment.attributes.privilegeLevel = segment->dpl;
-    value.segment.attributes.codeDataSegment = segment->db;
+    value.segment.attributes.system = segment->db;
     value.segment.attributes.defaultSize = segment->s;
     value.segment.attributes.longMode = segment->l;
     value.segment.attributes.granularity = segment->g;
@@ -52,7 +52,7 @@ void StoreSegment(const RegValue& value, struct kvm_segment *segment) noexcept {
     segment->type = value.segment.attributes.type;
     segment->present = value.segment.attributes.present;
     segment->dpl = value.segment.attributes.privilegeLevel;
-    segment->db = value.segment.attributes.codeDataSegment;
+    segment->db = value.segment.attributes.system;
     segment->s = value.segment.attributes.defaultSize;
     segment->l = value.segment.attributes.longMode;
     segment->g = value.segment.attributes.granularity;

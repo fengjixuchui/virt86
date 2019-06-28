@@ -163,7 +163,7 @@ static inline WHV_MAP_GPA_RANGE_FLAGS ToWHVFlags(const MemoryFlags flags) noexce
     if (bmFlags.AnyOf(MemoryFlags::Read)) whvFlags |= WHvMapGpaRangeFlagRead;
     if (bmFlags.AnyOf(MemoryFlags::Write)) whvFlags |= WHvMapGpaRangeFlagWrite;
     if (bmFlags.AnyOf(MemoryFlags::Execute)) whvFlags |= WHvMapGpaRangeFlagExecute;
-    if (bmFlags.AnyOf(MemoryFlags::DirtyPageTracking)) whvFlags |= WHvMapGpaRangeFlagTrackDirtyPages;
+    if (bmFlags.AnyOf(MemoryFlags::DirtyPageTracking) && WHPX_MIN_VERSION(10_0_17763_0)) whvFlags |= WHvMapGpaRangeFlagTrackDirtyPages;
     return whvFlags;
 }
 
@@ -191,6 +191,10 @@ MemoryMappingStatus WhpxVirtualMachine::UnmapGuestMemoryImpl(const uint64_t base
 }
 
 DirtyPageTrackingStatus WhpxVirtualMachine::QueryDirtyPagesImpl(const uint64_t baseAddress, const uint64_t size, uint64_t *bitmap, const size_t bitmapSize) noexcept {
+    if (m_dispatch.WHvQueryGpaRangeDirtyBitmap == nullptr) {
+        return DirtyPageTrackingStatus::Unsupported;
+    }
+
     // Bitmap buffer size must be a multiple of 8 bytes since WHPX uses UINT64
     if (bitmapSize & 0x7) {
         return DirtyPageTrackingStatus::MisalignedBitmap;

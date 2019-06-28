@@ -27,6 +27,8 @@ SOFTWARE.
 #include "whpx_regs.hpp"
 #include "whpx_defs.hpp"
 
+#include "virt86/util/bytemanip.hpp"
+
 namespace virt86::whpx {
 
 VPOperationStatus TranslateRegisterName(const Reg reg, WHV_REGISTER_NAME& name) noexcept {
@@ -71,7 +73,7 @@ VPOperationStatus TranslateRegisterName(const Reg reg, WHV_REGISTER_NAME& name) 
     case Reg::CR8: name = WHvX64RegisterCr8; break;
 
     case Reg::EFER: name = WHvX64RegisterEfer; break;
-    case Reg::XCR0: name = WHvX64RegisterXCr0; break;
+    case Reg::XCR0: if (WHPX_MIN_VERSION(10_0_17763_0)) { name = WHvX64RegisterXCr0; break; } return VPOperationStatus::Unsupported;
 
     case Reg::DR0: name = WHvX64RegisterDr0; break;
     case Reg::DR1: name = WHvX64RegisterDr1; break;
@@ -81,13 +83,13 @@ VPOperationStatus TranslateRegisterName(const Reg reg, WHV_REGISTER_NAME& name) 
     case Reg::DR7: name = WHvX64RegisterDr7; break;
 
     case Reg::ST0: case Reg::MM0: name = WHvX64RegisterFpMmx0; break;
-    case Reg::ST1: case Reg::MM1: name = WHvX64RegisterFpMmx0; break;
-    case Reg::ST2: case Reg::MM2: name = WHvX64RegisterFpMmx0; break;
-    case Reg::ST3: case Reg::MM3: name = WHvX64RegisterFpMmx0; break;
-    case Reg::ST4: case Reg::MM4: name = WHvX64RegisterFpMmx0; break;
-    case Reg::ST5: case Reg::MM5: name = WHvX64RegisterFpMmx0; break;
-    case Reg::ST6: case Reg::MM6: name = WHvX64RegisterFpMmx0; break;
-    case Reg::ST7: case Reg::MM7: name = WHvX64RegisterFpMmx0; break;
+    case Reg::ST1: case Reg::MM1: name = WHvX64RegisterFpMmx1; break;
+    case Reg::ST2: case Reg::MM2: name = WHvX64RegisterFpMmx2; break;
+    case Reg::ST3: case Reg::MM3: name = WHvX64RegisterFpMmx3; break;
+    case Reg::ST4: case Reg::MM4: name = WHvX64RegisterFpMmx4; break;
+    case Reg::ST5: case Reg::MM5: name = WHvX64RegisterFpMmx5; break;
+    case Reg::ST6: case Reg::MM6: name = WHvX64RegisterFpMmx6; break;
+    case Reg::ST7: case Reg::MM7: name = WHvX64RegisterFpMmx7; break;
 
     case Reg::XMM0: name = WHvX64RegisterXmm0; break;
     case Reg::XMM1: name = WHvX64RegisterXmm1; break;
@@ -222,21 +224,31 @@ void TranslateRegisterValue(const Reg reg, const RegValue& value, WHV_REGISTER_V
         output.Reg64 = value.u64;
         break;
 
-    case Reg::AL: case Reg::AH: case Reg::CL: case Reg::CH: case Reg::DL: case Reg::DH: case Reg::BL: case Reg::BH:
+    case Reg::AL: case Reg::CL: case Reg::DL: case Reg::BL:
     case Reg::SPL: case Reg::BPL: case Reg::SIL: case Reg::DIL:
     case Reg::R8B: case Reg::R9B: case Reg::R10B: case Reg::R11B: case Reg::R12B: case Reg::R13B: case Reg::R14B: case Reg::R15B:
+        output.Reg64 = SetLowByte(output.Reg64, value.u8);
+        break;
+
+    case Reg::AH: case Reg::CH: case Reg::DH: case Reg::BH:
+        output.Reg64 = SetHighByte(output.Reg64, value.u8);
+        break;
 
     case Reg::AX: case Reg::CX: case Reg::DX: case Reg::BX:
     case Reg::SP: case Reg::BP: case Reg::SI: case Reg::DI:
     case Reg::R8W: case Reg::R9W: case Reg::R10W: case Reg::R11W: case Reg::R12W: case Reg::R13W: case Reg::R14W: case Reg::R15W:
     case Reg::IP:
     case Reg::FLAGS:
+        output.Reg64 = SetLowWord(output.Reg64, value.u16);
+        break;
 
     case Reg::EAX: case Reg::ECX: case Reg::EDX: case Reg::EBX:
     case Reg::ESP: case Reg::EBP: case Reg::ESI: case Reg::EDI:
     case Reg::R8D: case Reg::R9D: case Reg::R10D: case Reg::R11D: case Reg::R12D: case Reg::R13D: case Reg::R14D: case Reg::R15D:
     case Reg::EIP:
     case Reg::EFLAGS:
+        output.Reg64 = value.u32;
+        break;
 
     case Reg::RAX: case Reg::RCX: case Reg::RDX: case Reg::RBX:
     case Reg::RSP: case Reg::RBP: case Reg::RSI: case Reg::RDI:
@@ -431,8 +443,8 @@ bool TranslateMSR(uint64_t msr, WHV_REGISTER_NAME& reg) noexcept {
     case 0x0000026F: reg = WHvX64RegisterMsrMtrrFix4kF8000; break;
 
     case 0xC0000103: reg = WHvX64RegisterTscAux; break;
-    case 0x00000048: reg = WHvX64RegisterSpecCtrl; break;
-    case 0x00000049: reg = WHvX64RegisterPredCmd; break;
+    case 0x00000048: if (WHPX_MIN_VERSION(10_0_17763_0)) { reg = WHvX64RegisterSpecCtrl; break; } return false;
+    case 0x00000049: if (WHPX_MIN_VERSION(10_0_17763_0)) { reg = WHvX64RegisterPredCmd; break; } return false;
     default: return false;
     }
 

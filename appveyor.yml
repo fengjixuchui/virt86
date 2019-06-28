@@ -1,16 +1,17 @@
-version: '1.0.1-b{build}'
+version: '1.1.0-b{build}'
 
 branches:
   only:
   - master
+  - /v\d+\.\d+\.\d+/
 
-only_commits:
-  files:
-    - CMakeLists.txt
-    - appveyor.yml
-    - modules/
-    - apps/
-    - cmake/
+#only_commits:
+#  files:
+#    - CMakeLists.txt
+#    - appveyor.yml
+#    - modules/
+#    - apps/
+#    - cmake/
 
 image:
 - Visual Studio 2017
@@ -66,10 +67,23 @@ after_test:
     if ($($env:APPVEYOR_REPO_TAG) -eq "true") {
         $tagName = $env:APPVEYOR_REPO_TAG_NAME
         $tagName = $tagName.Remove(0, 1)
-        $zipName = "virt86-$($tagName)-MSVC-$($env:PLATFORM)-$($env:CONFIGURATION).zip"
+        $zipName = "virt86-$($tagName)-Windows-MSVC-$($env:PLATFORM)-$($env:CONFIGURATION).zip"
     } else {
-        $zipName = "virt86-$($env:APPVEYOR_BUILD_VERSION)-MSVC-$($env:PLATFORM)-$($env:CONFIGURATION).zip"
+        $zipName = "virt86-$($env:APPVEYOR_BUILD_VERSION)-Windows-MSVC-$($env:PLATFORM)-$($env:CONFIGURATION).zip"
     }
     $zipFullPath = "$($binPath)$($zipName)"
     ZipFiles "$($zipFullPath)" "$($binPath)" | Out-Null
     Push-AppveyorArtifact "$($zipFullPath)" -FileName $zipName
+
+deploy:
+- provider: BinTray
+  username: strikerx3
+  api_key:
+    secure: MBloC3yYRMJJW4YwiQr15SO89uaxGb0o1BmE0NL0AyfHnSNVr79pBH45CloK9arG
+  subject: strikerx3
+  repo: virt86
+  package: virt86
+  version: 1.1.0
+  publish: true
+  override: true
+  explode: false

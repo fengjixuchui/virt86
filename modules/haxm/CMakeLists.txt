@@ -24,7 +24,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-project(virt86-haxm VERSION 1.0.1 LANGUAGES CXX)
+project(virt86-haxm VERSION 1.1.0 LANGUAGES CXX)
 
 ##############################
 # Source files
@@ -94,7 +94,7 @@ if(MSVC)
 
     set_target_properties(virt86-haxm PROPERTIES FOLDER Libraries)
 else()
-    add_precompiled_header(virt86-haxm src/common/pch.hpp PCH_PATH pch.hpp SOURCE_CXX "${CMAKE_CURRENT_SOURCE_DIR}/src/common/pch.cpp" FORCEINCLUDE)
+    #add_precompiled_header(virt86-haxm src/common/pch.hpp PCH_PATH pch.hpp SOURCE_CXX "${CMAKE_CURRENT_SOURCE_DIR}/src/common/pch.cpp" FORCEINCLUDE)
 endif()
 
 # Tell dependents that HAXM is available via compiler definition

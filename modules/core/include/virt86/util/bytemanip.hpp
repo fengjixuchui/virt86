@@ -1,5 +1,5 @@
 /*
-Defines the Interrupt Descriptor Table data structure.
+Byte manipulation routines.
 -------------------------------------------------------------------------------
 MIT License
 
@@ -29,32 +29,16 @@ SOFTWARE.
 
 namespace virt86 {
 
-enum class IDTType : uint8_t {
-    Null00 = 0x0,
-    Task32 = 0x5,
-    Intr32 = 0xE,
-    Trap32 = 0xF,
-};
+inline uint64_t SetLowByte(uint64_t lhs, uint8_t rhs) noexcept {
+    return (lhs & 0xFFFFFFFF'FFFFFF00) | rhs;
+}
 
-struct IDTEntry {
-    union {
-        struct {
-            uint16_t offsetLow : 16;
-            uint16_t selector: 16;
-            uint8_t zero : 8;
-            uint8_t type : 4;
-            uint8_t storageSegment : 1;
-            uint8_t privilegeLevel : 2;
-            uint8_t present : 1;
-            uint16_t offsetHigh : 16;
-        } data;
-        uint64_t descriptor;
-    };
+inline uint64_t SetHighByte(uint64_t lhs, uint8_t rhs) noexcept {
+    return (lhs & 0xFFFFFFFF'FFFF00FF) | ((uint64_t)rhs << 8ull);
+}
 
-    void Set(uint32_t offset, uint16_t selector, IDTType type, uint8_t attributes) noexcept;
-
-    uint32_t GetOffset() noexcept;
-    void SetOffset(uint32_t offset) noexcept;
-};
+inline uint64_t SetLowWord(uint64_t lhs, uint16_t rhs) noexcept {
+    return (lhs & 0xFFFFFFFF'FFFF0000) | rhs;
+}
 
 }

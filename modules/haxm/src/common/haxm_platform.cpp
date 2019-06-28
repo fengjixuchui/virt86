@@ -27,6 +27,8 @@ SOFTWARE.
 #include "haxm_vm.hpp"
 #include "haxm_platform_impl.hpp"
 
+#include "virt86/util/host_info.hpp"
+
 namespace virt86::haxm {
 
 HaxmPlatform& HaxmPlatform::Instance() noexcept {
@@ -52,7 +54,20 @@ HaxmPlatform::HaxmPlatform() noexcept
         m_initStatus = PlatformInitStatus::OK;
         m_features.maxProcessorsPerVM = 64;
         m_features.maxProcessorsGlobal = 128;
-        m_features.floatingPointExtensions = FloatingPointExtension::SSE2;
+        m_features.guestPhysicalAddress.maxBits = HostInfo.gpa.maxBits;
+        // HAXM imposes a hard cap of 43 GPA bits (2^31 pages)
+        if (m_features.guestPhysicalAddress.maxBits > 43) {
+            m_features.guestPhysicalAddress.maxBits = 43;
+        }
+        m_features.guestPhysicalAddress.maxAddress = (1ull << m_features.guestPhysicalAddress.maxBits);
+        m_features.guestPhysicalAddress.mask = m_features.guestPhysicalAddress.maxAddress - 1;
+        m_features.floatingPointExtensions = HostInfo.floatingPointExtensions;
+        // As of HAXM 7.5.1, AVX and above are not supported
+        m_features.floatingPointExtensions &= FloatingPointExtension::MMX | FloatingPointExtension::SSE
+            | FloatingPointExtension::SSE2 | FloatingPointExtension::SSE3 | FloatingPointExtension::SSSE3
+            | FloatingPointExtension::SSE4_1 | FloatingPointExtension::SSE4_2 | FloatingPointExtension::F16C
+            | FloatingPointExtension::FXSAVE;
+
         m_features.unrestrictedGuest = (caps.winfo & HAX_CAP_UG) != 0;
         m_features.extendedPageTables = (caps.winfo & HAX_CAP_EPT) != 0;
         m_features.guestDebugging = (caps.winfo & HAX_CAP_DEBUG) != 0;
@@ -61,8 +76,13 @@ HaxmPlatform::HaxmPlatform() noexcept
         m_features.memoryAliasing = true;
         m_features.memoryUnmapping = true;
         m_features.partialUnmapping = true;  // TODO: since when?
-        m_features.partialMMIOInstructions = true;
-        m_features.extendedControlRegisters =  ExtendedControlRegister::MXCSRMask;
+        m_features.partialMMIOInstructions = (caps.winfo & HAX_CAP_IMPLICIT_RAMBLOCK) == 0;
+        m_features.extendedControlRegisters = ExtendedControlRegister::MXCSRMask;
+
+        // MMIO instructions are no longer partially executed as of HAXM 7.5.1,
+        // which also introduced the HAX_CAP_IMPLICIT_RAMBLOCK feature flag.
+        // This seems to be the only way to differentiate between 7.5.1 and
+        // older versions.
     }
     else {
         m_initStatus = PlatformInitStatus::Unsupported;
