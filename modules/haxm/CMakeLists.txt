@@ -1,6 +1,6 @@
 # HAXM platform adapter.
 #
-# Supported by all major operating systems: Windows, Mac OS X and Linux.
+# Supported by all major operating systems: Windows, macOS and Linux.
 # Uses Intel VT-x only, therefore it is only supported by Intel processors.
 # -------------------------------------------------------------------------------
 # MIT License
@@ -24,7 +24,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-project(virt86-haxm VERSION 1.1.0 LANGUAGES CXX)
+project(virt86-haxm VERSION ${CMAKE_PROJECT_VERSION} LANGUAGES CXX)
 
 ##############################
 # Source files
@@ -64,16 +64,39 @@ file(GLOB_RECURSE public_headers
 
 add_library(virt86-haxm OBJECT ${sources} ${private_headers} ${public_headers})
 
+# Include core
 if(TARGET virt86-core)
     add_library(virt86::virt86-core ALIAS virt86-core)
 else()
     find_package(virt86-core CONFIG REQUIRED)
 endif()
-
 target_link_libraries(virt86-haxm PUBLIC virt86::virt86-core)
 
-set_target_properties(virt86-haxm PROPERTIES DEBUG_POSTFIX "-debug")
+# Include appropriate system module
+if(WIN32)
+    if(TARGET virt86-sys-windows)
+        add_library(virt86::virt86-sys-windows ALIAS virt86-sys-windows)
+    else()
+        find_package(virt86-sys-windows CONFIG REQUIRED)
+    endif()
+    target_link_libraries(virt86-haxm PUBLIC virt86::virt86-sys-windows)
+elseif(LINUX)
+    if(TARGET virt86-sys-linux)
+        add_library(virt86::virt86-sys-linux ALIAS virt86-sys-linux)
+    else()
+        find_package(virt86-sys-linux CONFIG REQUIRED)
+    endif()
+    target_link_libraries(virt86-haxm PUBLIC virt86::virt86-sys-linux)
+elseif(APPLE)
+    if(TARGET virt86-sys-darwin)
+        add_library(virt86::virt86-sys-darwin ALIAS virt86-sys-darwin)
+    else()
+        find_package(virt86-sys-darwin CONFIG REQUIRED)
+    endif()
+    target_link_libraries(virt86-haxm PUBLIC virt86::virt86-sys-darwin)
+endif()
 
+# Add include directories
 target_include_directories(virt86-haxm
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -83,6 +106,7 @@ target_include_directories(virt86-haxm
         ${CMAKE_CURRENT_SOURCE_DIR}/src/${platform_path}
 )
 
+# Configure MSVC and precompiled header
 if(MSVC)
     add_precompiled_header(virt86-haxm pch.hpp SOURCE_CXX "${CMAKE_CURRENT_SOURCE_DIR}/src/common/pch.cpp" FORCEINCLUDE)
 

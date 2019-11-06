@@ -92,7 +92,7 @@ void printFPExts(FloatingPointExtension fpExts) {
 }
 
 int main() {
-    printf("virt86 Platform Checker 1.1.0\n");  // TODO: externalize version string
+    printf("virt86 Platform Checker " VIRT86_VERSION "\n");
     printf("Copyright (c) 2019 Ivan Roberto de Oliveira\n");
     printf("\n");
 
@@ -109,8 +109,8 @@ int main() {
 
     printf("Virtualization platforms available on this system:\n");
     printf("\n");
-    for (size_t i = 0; i < array_size(PlatformFactories); i++) {
-        const auto& platform = PlatformFactories[i]();
+    for (auto& platformFactory : PlatformFactories) {
+        const auto& platform = platformFactory();
 
         printf("%s - ", platform.GetName().c_str());
 
@@ -130,9 +130,10 @@ int main() {
         }
 
         const auto& features = platform.GetFeatures();
+        printf("  Version: %s\n", platform.GetVersion().c_str());
         printf("  Features:\n");
         printf("    Maximum number of VCPUs: %u per VM, %u global\n", features.maxProcessorsPerVM, features.maxProcessorsGlobal);
-        printf("    Maximum guest physical address: 0x%llx\n", features.guestPhysicalAddress.maxAddress);
+        printf("    Maximum guest physical address: 0x%" PRIx64 "\n", features.guestPhysicalAddress.maxAddress);
         printf("    Unrestricted guest: %s\n", (features.unrestrictedGuest) ? "supported" : "unsuported");
         printf("    Extended Page Tables: %s\n", (features.extendedPageTables) ? "supported" : "unsuported");
         printf("    Guest debugging: %s\n", (features.guestDebugging) ? "available" : "unavailable");
@@ -144,6 +145,7 @@ int main() {
         printf("    Memory unmapping: %s\n", (features.memoryUnmapping) ? "supported" : "unsuported");
         printf("    Partial unmapping: %s\n", (features.partialUnmapping) ? "supported" : "unsuported");
         printf("    Partial MMIO instructions: %s\n", (features.partialMMIOInstructions) ? "yes" : "no");
+        printf("    Guest TSC scaling: %s\n", (features.guestTSCScaling) ? "supported" : "unsupported");
         printf("    Custom CPUID results: %s\n", (features.customCPUIDs) ? "supported" : "unsupported");
         if (features.customCPUIDs && features.supportedCustomCPUIDs.size() > 0) {
             printf("       Function        EAX         EBX         ECX         EDX\n");
@@ -170,6 +172,7 @@ int main() {
             if (extVMExits.AnyOf(ExtendedVMExit::CPUID)) printf(" CPUID");
             if (extVMExits.AnyOf(ExtendedVMExit::MSRAccess)) printf(" MSRAccess");
             if (extVMExits.AnyOf(ExtendedVMExit::Exception)) printf(" Exception");
+            if (extVMExits.AnyOf(ExtendedVMExit::TSCAccess)) printf(" TSCAccess");
         }
         printf("\n");
         printf("    Exception exits:");

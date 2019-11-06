@@ -24,7 +24,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-project(virt86-whpx VERSION 1.1.0 LANGUAGES CXX)
+project(virt86-whpx VERSION ${CMAKE_PROJECT_VERSION} LANGUAGES CXX)
 
 if(${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION} VERSION_LESS 10.0.17134.0)
     message(WARNING "WHPX requires Windows SDK version 10.0.17134.0 or later. virt86-whpx will not be available.")
@@ -55,16 +55,23 @@ file(GLOB_RECURSE public_headers
 
 add_library(virt86-whpx OBJECT ${sources} ${private_headers} ${public_headers})
 
+# Include core
 if(TARGET virt86-core)
     add_library(virt86::virt86-core ALIAS virt86-core)
 else()
     find_package(virt86-core CONFIG REQUIRED)
 endif()
-
 target_link_libraries(virt86-whpx PUBLIC virt86::virt86-core)
 
-set_target_properties(virt86-whpx PROPERTIES DEBUG_POSTFIX "-debug")
+# Include Windows utilities
+if(TARGET virt86-sys-windows)
+    add_library(virt86::virt86-sys-windows ALIAS virt86-sys-windows)
+else()
+    find_package(virt86-sys-windows CONFIG REQUIRED)
+endif()
+target_link_libraries(virt86-whpx PUBLIC virt86::virt86-sys-windows)
 
+# Add include directories
 target_include_directories(virt86-whpx
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -73,6 +80,7 @@ target_include_directories(virt86-whpx
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+# Configure MSVC and precompiled header
 if(MSVC)
     add_precompiled_header(virt86-whpx pch.hpp SOURCE_CXX "${CMAKE_CURRENT_SOURCE_DIR}/src/pch.cpp" FORCEINCLUDE)
 
